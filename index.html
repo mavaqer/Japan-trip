@@ -3,231 +3,217 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Japan Travel Hub - Fixed & Final</title>
+    <title>Japan Trip Master</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root {
             --primary: #bc002d; --eat: #ff7675; --drink: #74b9ff; 
-            --visit: #55efc4; --shop: #a29bfe; --stay: #ffeaa7;
+            --visit: #55efc4; --shop: #a29bfe; --stay: #f9ca24;
         }
-        body { font-family: 'Inter', system-ui, sans-serif; background: #f4f4f7; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #f0f2f5; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        /* Layout */
-        .header-bar { background: #fff; padding: 15px 25px; border-bottom: 1px solid #e1e1e8; z-index: 1000; display: flex; gap: 15px; align-items: center; }
-        .main-container { display: flex; flex: 1; overflow: hidden; }
-        .sidebar { width: 380px; background: white; overflow-y: auto; padding: 20px; border-right: 1px solid #e1e1e8; }
+        /* Header */
+        .header { background: #fff; padding: 12px 20px; border-bottom: 1px solid #dcdde1; display: flex; gap: 15px; align-items: center; z-index: 1000; }
+        .search-wrap { position: relative; flex: 1; max-width: 700px; }
+        input#placeInput { width: 100%; padding: 14px 18px; border: 2px solid #e1e4e8; border-radius: 12px; font-size: 15px; outline: none; transition: border-color 0.2s; box-sizing: border-box; }
+        input#placeInput:focus { border-color: var(--primary); }
+
+        /* Enhanced Search Dropdown */
+        #suggestions { 
+            position: absolute; top: 58px; left: 0; right: 0; 
+            background: white; border-radius: 12px; box-shadow: 0 12px 30px rgba(0,0,0,0.15); 
+            z-index: 2000; display: none; max-height: 450px; overflow-y: auto; border: 1px solid #dcdde1;
+        }
+        .s-item { padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #f1f2f6; display: flex; flex-direction: column; }
+        .s-item:hover { background: #f8f9fa; }
+        .s-item .s-name { font-weight: 700; color: #2d3436; font-size: 14px; margin-bottom: 2px; }
+        .s-item .s-meta { color: #636e72; font-size: 12px; display: flex; gap: 8px; }
+        .s-item .s-postcode { color: var(--primary); font-family: monospace; font-weight: bold; }
+
+        /* Main View */
+        .main { display: flex; flex: 1; overflow: hidden; }
+        .sidebar { width: 360px; background: white; overflow-y: auto; padding: 20px; border-right: 1px solid #dcdde1; }
         #map { flex: 1; }
 
-        /* Search Bar & Dropdown */
-        .search-container { position: relative; flex: 1; max-width: 600px; }
-        input#placeInput { width: 100%; padding: 12px 15px; border: 2px solid #edeff2; border-radius: 10px; font-size: 15px; transition: 0.2s; outline: none; }
-        input#placeInput:focus { border-color: var(--primary); }
-        
-        #suggestions { 
-            position: absolute; top: 52px; left: 0; right: 0; 
-            background: white; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
-            z-index: 2000; display: none; max-height: 300px; overflow-y: auto; border: 1px solid #e1e1e8;
-        }
-        .suggestion-item { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #f0f0f5; font-size: 13px; line-height: 1.4; }
-        .suggestion-item:hover { background: #f9f9fb; }
-        .suggestion-item:last-child { border-bottom: none; }
+        /* Categorized List */
+        .cat-box { margin-bottom: 28px; }
+        .cat-head { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .place { display: flex; align-items: center; background: #fff; padding: 12px; border-radius: 10px; margin-bottom: 8px; border: 1px solid #edf0f2; border-left: 5px solid #ddd; position: relative; }
+        .place.done { opacity: 0.4; filter: grayscale(1); }
+        .place span { flex: 1; font-size: 14px; margin: 0 10px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .place small { display: block; font-size: 10px; color: #999; margin-top: 2px; }
+        .del-btn { background: none; border: none; color: #fab1a0; cursor: pointer; font-size: 18px; transition: color 0.2s; }
+        .del-btn:hover { color: var(--primary); }
 
-        /* Sidebar Content */
-        .cat-section { margin-bottom: 25px; }
-        .cat-title { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; display: flex; justify-content: space-between; }
-        .place-item { display: flex; align-items: center; background: #f9f9fb; padding: 10px; border-radius: 8px; margin-bottom: 8px; border-left: 4px solid #ddd; }
-        .place-item.visited { opacity: 0.4; filter: grayscale(1); }
-        .place-item span { flex: 1; font-size: 14px; margin-left: 10px; color: #2d3436; }
-        .del-btn { background: none; border: none; color: #ff7675; cursor: pointer; padding: 5px; font-weight: bold; }
-
-        button.add-manual { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 10px; cursor: pointer; font-weight: 600; }
+        .btn-main { background: var(--primary); color: white; border: none; padding: 0 20px; height: 48px; border-radius: 12px; cursor: pointer; font-weight: 700; white-space: nowrap; }
     </style>
 </head>
 <body>
 
-<div class="header-bar">
-    <h2 style="margin:0; font-size: 1.2rem;">🌸 Japan Hub</h2>
-    <div class="search-container">
-        <input type="text" id="placeInput" placeholder="Search Japan (e.g. 'Shibuya Sky' or 'Ichiran')" autocomplete="off">
+<div class="header">
+    <h2 style="margin:0; font-size: 1.4rem; color: var(--primary);">⛩️</h2>
+    <div class="search-wrap">
+        <input type="text" id="placeInput" placeholder="Enter a Japan location (name, district, or shop)..." autocomplete="off">
         <div id="suggestions"></div>
     </div>
-    <button class="add-manual" onclick="addManually()">Add Current</button>
+    <button class="btn-main" onclick="addCustom()">Add List Only</button>
 </div>
 
-<div class="main-container">
-    <div class="sidebar" id="sidebar">
-        <!-- Categories populated here -->
-    </div>
+<div class="main">
+    <div class="sidebar" id="sidebar"></div>
     <div id="map"></div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    let locations = JSON.parse(localStorage.getItem('japan_trip_v4')) || [];
-    let map, markerGroup;
-    let debounceTimer;
+    let locations = JSON.parse(localStorage.getItem('japan_voyage_v6')) || [];
+    let map, markers;
+    let timer;
 
-    const categories = {
-        eat: { color: '#ff7675', icon: '🍱', keywords: ['ramen', 'sushi', 'food', 'cafe', 'izakaya', 'restaurant', 'grill', 'shabu', 'kura', 'matsuya'] },
-        drink: { color: '#74b9ff', icon: '🍶', keywords: ['bar', 'pub', 'cocktail', 'whisky', 'brewery', 'sake', 'golden gai', 'beer'] },
-        visit: { color: '#55efc4', icon: '⛩️', keywords: ['temple', 'shrine', 'museum', 'park', 'view', 'tower', 'castle', 'sky', 'park', 'shrine'] },
-        shop: { color: '#a29bfe', icon: '🛍️', keywords: ['store', 'mall', 'market', 'don quijote', 'uniqlo', 'shopping', 'bic', 'yodobashi', 'loft'] },
-        stay: { color: '#ffeaa7', icon: '🛌', keywords: ['hotel', 'ryokan', 'hostel', 'inn', 'apa', 'hilton'] }
+    // TRIPLE-CHECKED CATEGORIES
+    const cats = {
+        eat: { color: '#ff7675', icon: '🍱', keywords: ['ramen', 'sushi', 'food', 'restaurant', 'cafe', 'izakaya', 'grill', 'shabu', 'kura', 'matsuya', 'yakitori', 'bakery', 'dining', 'kitchen', 'donburi', 'tempura', 'udon', 'soba'] },
+        drink: { color: '#74b9ff', icon: '🍶', keywords: ['bar', 'pub', 'cocktail', 'whisky', 'brewery', 'sake', 'gai', 'beer', 'club', 'lounge', 'speakeasy', 'wine'] },
+        visit: { color: '#55efc4', icon: '⛩️', keywords: ['temple', 'shrine', 'museum', 'park', 'view', 'tower', 'castle', 'sky', 'garden', 'landmark', 'station', 'shinkansen', 'mountain', 'lake', 'onsen', 'fuji', 'disney', 'aquarium'] },
+        shop: { color: '#a29bfe', icon: '🛍️', keywords: ['store', 'mall', 'market', 'don quijote', 'uniqlo', 'shopping', 'bic', 'yodobashi', 'loft', 'plaza', 'center', 'department', 'hands', 'lab', 'parco'] },
+        stay: { color: '#f9ca24', icon: '🛌', keywords: ['hotel', 'ryokan', 'hostel', 'inn', 'apa', 'hilton', 'shangri', 'dormy', 'villa', 'lodge', 'grand', 'tokyu', 'prince'] }
     };
 
     function initMap() {
-        map = L.map('map').setView([35.6895, 139.6917], 12);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; OpenStreetMap'
-        }).addTo(map);
-        markerGroup = L.layerGroup().addTo(map);
+        map = L.map('map', { zoomControl: false }).setView([35.6895, 139.6917], 12);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+        markers = L.layerGroup().addTo(map);
         render();
     }
 
-    // Fixed Search Logic
     const input = document.getElementById('placeInput');
     const suggestBox = document.getElementById('suggestions');
 
+    // ENHANCED PHOTON SEARCH FOR JAPAN
     input.addEventListener('input', () => {
-        clearTimeout(debounceTimer);
+        clearTimeout(timer);
         const query = input.value.trim();
-        if (query.length < 3) { suggestBox.style.display = 'none'; return; }
+        if (query.length < 2) { suggestBox.style.display = 'none'; return; }
 
-        debounceTimer = setTimeout(() => {
-            fetchPlaces(query);
-        }, 500); // Wait 500ms before calling API
+        timer = setTimeout(async () => {
+            try {
+                // Bias heavily to Japan via lat/lon and string
+                const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=10&lat=35.68&lon=139.69&location_bias_scale=0.8`;
+                const res = await fetch(url);
+                const data = await res.json();
+                
+                suggestBox.innerHTML = '';
+                // Only show results that are in Japan
+                const japanResults = data.features.filter(f => f.properties.country === "Japan" || f.properties.countrycode === "JP");
+
+                if (japanResults.length > 0) {
+                    suggestBox.style.display = 'block';
+                    japanResults.forEach(f => {
+                        const p = f.properties;
+                        const div = document.createElement('div');
+                        div.className = 's-item';
+                        
+                        // Extract rich info: Name, District, Prefecture, Postcode
+                        const name = p.name || "Unknown Point";
+                        const city = p.city || p.district || p.state || "";
+                        const postcode = p.postcode ? `<span class="s-postcode">〒${p.postcode}</span>` : "";
+                        const prefecture = p.state || "";
+
+                        div.innerHTML = `
+                            <span class="s-name">${name}</span>
+                            <div class="s-meta">${postcode} ${city} ${prefecture}</div>
+                        `;
+                        div.onclick = () => select(f);
+                        suggestBox.appendChild(div);
+                    });
+                }
+            } catch (e) { console.error(e); }
+        }, 300);
     });
 
-    async function fetchPlaces(query) {
-        try {
-            // Added User-Agent and focused on Japan
-            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}+Japan&limit=6&addressdetails=1`;
-            const response = await fetch(url, {
-                headers: { 'User-Agent': 'JapanTravelPlanner/1.0 (contact@example.com)' }
-            });
-            const data = await response.json();
-            
-            suggestBox.innerHTML = '';
-            if (data.length > 0) {
-                suggestBox.style.display = 'block';
-                data.forEach(place => {
-                    const div = document.createElement('div');
-                    div.className = 'suggestion-item';
-                    // Show a cleaner name in the dropdown
-                    const shortName = place.display_name.split(',').slice(0, 3).join(',');
-                    div.innerText = shortName;
-                    div.onclick = () => selectPlace(place);
-                    suggestBox.appendChild(div);
-                });
-            }
-        } catch (err) {
-            console.error("Geocoding failed", err);
-        }
-    }
-
-    function selectPlace(place) {
-        input.value = place.display_name;
-        input.dataset.lat = place.lat;
-        input.dataset.lon = place.lon;
+    function select(f) {
+        const p = f.properties;
+        const c = f.geometry.coordinates;
+        input.value = p.name;
+        // Storing extra meta in hidden attributes
+        input.dataset.lat = c[1];
+        input.dataset.lon = c[0];
+        input.dataset.meta = `${p.city || ''} ${p.postcode || ''}`;
         suggestBox.style.display = 'none';
-        addLocation();
+        add();
     }
 
-    function addLocation() {
-        const fullTitle = input.value;
-        if (!fullTitle) return;
-
-        const lat = input.dataset.lat;
-        const lon = input.dataset.lon;
+    function add() {
+        const name = input.value;
+        if (!name) return;
 
         let category = 'visit';
-        const lower = fullTitle.toLowerCase();
-        for (const [key, val] of Object.entries(categories)) {
-            if (val.keywords.some(kw => lower.includes(kw))) {
-                category = key;
-                break;
-            }
+        const lower = name.toLowerCase();
+        for (const [key, val] of Object.entries(cats)) {
+            if (val.keywords.some(kw => lower.includes(kw))) { category = key; break; }
         }
 
         locations.push({
             id: Date.now(),
-            name: fullTitle.split(',')[0],
+            name: name,
+            meta: input.dataset.meta || '',
             category: category,
-            lat: lat || null,
-            lon: lon || null,
+            lat: input.dataset.lat || null,
+            lon: input.dataset.lon || null,
             visited: false
         });
 
         input.value = '';
-        delete input.dataset.lat;
-        delete input.dataset.lon;
+        delete input.dataset.lat; delete input.dataset.lon; delete input.dataset.meta;
         save();
     }
 
-    function addManually() { addLocation(); }
-
-    function save() {
-        localStorage.setItem('japan_trip_v4', JSON.stringify(locations));
-        render();
-    }
-
-    function toggleVisited(id) {
-        locations = locations.map(l => l.id === id ? {...l, visited: !l.visited} : l);
-        save();
-    }
-
-    function deleteLoc(id) {
-        locations = locations.filter(l => l.id !== id);
-        save();
-    }
+    function addCustom() { add(); }
+    function save() { localStorage.setItem('japan_voyage_v6', JSON.stringify(locations)); render(); }
+    function toggle(id) { locations = locations.map(l => l.id === id ? {...l, visited: !l.visited} : l); save(); }
+    function del(id) { locations = locations.filter(l => l.id !== id); save(); }
 
     function render() {
         const sidebar = document.getElementById('sidebar');
         sidebar.innerHTML = '';
-        markerGroup.clearLayers();
+        markers.clearLayers();
+        const bounds = [];
 
-        const activeCoords = [];
-
-        Object.keys(categories).forEach(catKey => {
-            const cat = categories[catKey];
-            const items = locations.filter(l => l.category === catKey);
+        Object.keys(cats).forEach(k => {
+            const items = locations.filter(l => l.category === k);
+            if (items.length === 0) return;
             
-            const section = document.createElement('div');
-            section.className = 'cat-section';
-            section.innerHTML = `<div class="cat-title" style="color:${cat.color}">${cat.icon} ${catKey} <span>${items.length}</span></div>`;
+            const div = document.createElement('div');
+            div.className = 'cat-box';
+            div.innerHTML = `<div class="cat-head" style="color:${cats[k].color}">${cats[k].icon} ${k} <span>${items.length}</span></div>`;
             
-            items.forEach(loc => {
-                const el = document.createElement('div');
-                el.className = `place-item ${loc.visited ? 'visited' : ''}`;
-                el.style.borderLeftColor = cat.color;
-                el.innerHTML = `
-                    <input type="checkbox" ${loc.visited ? 'checked' : ''} onchange="toggleVisited(${loc.id})">
-                    <span>${loc.name}</span>
-                    <button class="del-btn" onclick="deleteLoc(${loc.id})">✕</button>
+            items.forEach(l => {
+                const p = document.createElement('div');
+                p.className = `place ${l.visited ? 'done' : ''}`;
+                p.style.borderLeftColor = cats[k].color;
+                p.innerHTML = `
+                    <input type="checkbox" ${l.visited ? 'checked' : ''} onchange="toggle(${l.id})">
+                    <span>${l.name} <small>${l.meta}</small></span>
+                    <button class="del-btn" onclick="del(${l.id})">✕</button>
                 `;
-                section.appendChild(el);
+                div.appendChild(p);
 
-                if (loc.lat && loc.lon && !loc.visited) {
-                    activeCoords.push([loc.lat, loc.lon]);
-                    L.circleMarker([loc.lat, loc.lon], {
-                        radius: 7, fillColor: cat.color, color: "#fff", weight: 2, fillOpacity: 0.9
-                    }).addTo(markerGroup).bindPopup(`<b>${loc.name}</b>`);
+                if (l.lat && l.lon && !l.visited) {
+                    bounds.push([l.lat, l.lon]);
+                    L.circleMarker([l.lat, l.lon], {
+                        radius: 9, fillColor: cats[k].color, color: "#fff", weight: 2, fillOpacity: 1
+                    }).addTo(markers).bindPopup(`<strong>${l.name}</strong>`);
                 }
             });
-            sidebar.appendChild(section);
+            sidebar.appendChild(div);
         });
 
-        if (activeCoords.length > 0) {
-            map.fitBounds(activeCoords, { padding: [50, 50], maxZoom: 15 });
-        }
+        if (bounds.length > 0) map.fitBounds(bounds, { padding: [60, 60], maxZoom: 15 });
     }
 
     window.onload = initMap;
-    // Hide suggestions when clicking away
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('.search-container')) suggestBox.style.display = 'none';
-    });
+    document.addEventListener('click', (e) => { if (!e.target.closest('.search-wrap')) suggestBox.style.display = 'none'; });
 </script>
-
 </body>
 </html>

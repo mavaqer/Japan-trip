@@ -3,133 +3,172 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Japan Travel Hub + Map</title>
-    <!-- Leaflet Maps CSS -->
+    <title>Japan Travel Hub - Fixed & Final</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root {
             --primary: #bc002d; --eat: #ff7675; --drink: #74b9ff; 
             --visit: #55efc4; --shop: #a29bfe; --stay: #ffeaa7;
         }
-        body { font-family: 'Segoe UI', sans-serif; background: #f9f9f9; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: #f4f4f7; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
         /* Layout */
-        .top-panel { padding: 20px; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000; }
-        .main-content { display: flex; flex: 1; overflow: hidden; }
-        .sidebar { width: 400px; overflow-y: auto; padding: 20px; border-right: 1px solid #ddd; }
-        #map { flex: 1; background: #e0e0e0; }
+        .header-bar { background: #fff; padding: 15px 25px; border-bottom: 1px solid #e1e1e8; z-index: 1000; display: flex; gap: 15px; align-items: center; }
+        .main-container { display: flex; flex: 1; overflow: hidden; }
+        .sidebar { width: 380px; background: white; overflow-y: auto; padding: 20px; border-right: 1px solid #e1e1e8; }
+        #map { flex: 1; }
 
-        /* Search UI */
-        .search-box { position: relative; display: flex; gap: 8px; }
-        input#placeInput { flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 8px; }
-        #suggestions { position: absolute; top: 50px; width: 80%; background: white; border: 1px solid #ddd; border-radius: 8px; z-index: 2000; display: none; }
-        .suggestion-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 13px; }
+        /* Search Bar & Dropdown */
+        .search-container { position: relative; flex: 1; max-width: 600px; }
+        input#placeInput { width: 100%; padding: 12px 15px; border: 2px solid #edeff2; border-radius: 10px; font-size: 15px; transition: 0.2s; outline: none; }
+        input#placeInput:focus { border-color: var(--primary); }
         
-        /* Category Cards */
-        .cat-group { margin-bottom: 20px; }
-        .cat-header { font-weight: bold; padding: 5px 0; border-bottom: 2px solid #eee; margin-bottom: 10px; display: flex; justify-content: space-between; }
-        .item { display: flex; align-items: center; background: white; padding: 8px; margin-bottom: 5px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-size: 14px; }
-        .item.visited { opacity: 0.5; text-decoration: line-through; }
-        .delete-btn { margin-left: auto; cursor: pointer; color: #ff7675; border: none; background: none; }
+        #suggestions { 
+            position: absolute; top: 52px; left: 0; right: 0; 
+            background: white; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+            z-index: 2000; display: none; max-height: 300px; overflow-y: auto; border: 1px solid #e1e1e8;
+        }
+        .suggestion-item { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #f0f0f5; font-size: 13px; line-height: 1.4; }
+        .suggestion-item:hover { background: #f9f9fb; }
+        .suggestion-item:last-child { border-bottom: none; }
 
-        /* Marker Colors */
-        .count { font-size: 0.8em; color: #666; }
+        /* Sidebar Content */
+        .cat-section { margin-bottom: 25px; }
+        .cat-title { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; display: flex; justify-content: space-between; }
+        .place-item { display: flex; align-items: center; background: #f9f9fb; padding: 10px; border-radius: 8px; margin-bottom: 8px; border-left: 4px solid #ddd; }
+        .place-item.visited { opacity: 0.4; filter: grayscale(1); }
+        .place-item span { flex: 1; font-size: 14px; margin-left: 10px; color: #2d3436; }
+        .del-btn { background: none; border: none; color: #ff7675; cursor: pointer; padding: 5px; font-weight: bold; }
+
+        button.add-manual { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 10px; cursor: pointer; font-weight: 600; }
     </style>
 </head>
 <body>
 
-<div class="top-panel">
-    <div class="search-box">
-        <input type="text" id="placeInput" placeholder="Add a place in Japan (e.g. 'TeamLab Planets' or 'Golden Gai')" autocomplete="off">
-        <button onclick="addLocation()" style="background:var(--primary); color:white; border:none; border-radius:8px; padding:0 20px; cursor:pointer;">Add</button>
+<div class="header-bar">
+    <h2 style="margin:0; font-size: 1.2rem;">🌸 Japan Hub</h2>
+    <div class="search-container">
+        <input type="text" id="placeInput" placeholder="Search Japan (e.g. 'Shibuya Sky' or 'Ichiran')" autocomplete="off">
         <div id="suggestions"></div>
     </div>
+    <button class="add-manual" onclick="addManually()">Add Current</button>
 </div>
 
-<div class="main-content">
-    <div class="sidebar">
-        <div id="category-lists">
-            <!-- Lists generated by JS -->
-        </div>
+<div class="main-container">
+    <div class="sidebar" id="sidebar">
+        <!-- Categories populated here -->
     </div>
     <div id="map"></div>
 </div>
 
-<!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
 <script>
-    let locations = JSON.parse(localStorage.getItem('japan_trip_v3')) || [];
+    let locations = JSON.parse(localStorage.getItem('japan_trip_v4')) || [];
     let map, markerGroup;
+    let debounceTimer;
 
-    const config = {
-        eat: { color: '#ff7675', keywords: ['ramen', 'sushi', 'food', 'cafe', 'izakaya', 'restaurant', 'grill'] },
-        drink: { color: '#74b9ff', keywords: ['bar', 'pub', 'cocktail', 'whisky', 'brewery', 'sake'] },
-        visit: { color: '#55efc4', keywords: ['temple', 'shrine', 'museum', 'park', 'view', 'tower', 'castle'] },
-        shop: { color: '#a29bfe', keywords: ['store', 'mall', 'market', 'don quijote', 'uniqlo', 'shopping'] },
-        stay: { color: '#ffeaa7', keywords: ['hotel', 'ryokan', 'hostel', 'inn'] }
+    const categories = {
+        eat: { color: '#ff7675', icon: '🍱', keywords: ['ramen', 'sushi', 'food', 'cafe', 'izakaya', 'restaurant', 'grill', 'shabu', 'kura', 'matsuya'] },
+        drink: { color: '#74b9ff', icon: '🍶', keywords: ['bar', 'pub', 'cocktail', 'whisky', 'brewery', 'sake', 'golden gai', 'beer'] },
+        visit: { color: '#55efc4', icon: '⛩️', keywords: ['temple', 'shrine', 'museum', 'park', 'view', 'tower', 'castle', 'sky', 'park', 'shrine'] },
+        shop: { color: '#a29bfe', icon: '🛍️', keywords: ['store', 'mall', 'market', 'don quijote', 'uniqlo', 'shopping', 'bic', 'yodobashi', 'loft'] },
+        stay: { color: '#ffeaa7', icon: '🛌', keywords: ['hotel', 'ryokan', 'hostel', 'inn', 'apa', 'hilton'] }
     };
 
-    // Initialize Map
     function initMap() {
-        map = L.map('map').setView([35.6895, 139.6917], 11); // Center on Tokyo
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
+        map = L.map('map').setView([35.6895, 139.6917], 12);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap'
         }).addTo(map);
         markerGroup = L.layerGroup().addTo(map);
         render();
     }
 
-    // Free Search (OpenStreetMap)
+    // Fixed Search Logic
     const input = document.getElementById('placeInput');
     const suggestBox = document.getElementById('suggestions');
-    
-    input.addEventListener('input', async (e) => {
-        const query = e.target.value;
+
+    input.addEventListener('input', () => {
+        clearTimeout(debounceTimer);
+        const query = input.value.trim();
         if (query.length < 3) { suggestBox.style.display = 'none'; return; }
-        const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}+Japan&limit=5`);
-        const data = await resp.json();
-        suggestBox.innerHTML = '';
-        if (data.length > 0) {
-            suggestBox.style.display = 'block';
-            data.forEach(place => {
-                const div = document.createElement('div');
-                div.className = 'suggestion-item';
-                div.innerText = place.display_name;
-                div.onclick = () => { 
-                    input.value = place.display_name; 
-                    input.dataset.lat = place.lat;
-                    input.dataset.lon = place.lon;
-                    suggestBox.style.display = 'none'; 
-                };
-                suggestBox.appendChild(div);
-            });
-        }
+
+        debounceTimer = setTimeout(() => {
+            fetchPlaces(query);
+        }, 500); // Wait 500ms before calling API
     });
 
-    function addLocation() {
-        const name = input.value;
-        if (!name) return;
+    async function fetchPlaces(query) {
+        try {
+            // Added User-Agent and focused on Japan
+            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}+Japan&limit=6&addressdetails=1`;
+            const response = await fetch(url, {
+                headers: { 'User-Agent': 'JapanTravelPlanner/1.0 (contact@example.com)' }
+            });
+            const data = await response.json();
+            
+            suggestBox.innerHTML = '';
+            if (data.length > 0) {
+                suggestBox.style.display = 'block';
+                data.forEach(place => {
+                    const div = document.createElement('div');
+                    div.className = 'suggestion-item';
+                    // Show a cleaner name in the dropdown
+                    const shortName = place.display_name.split(',').slice(0, 3).join(',');
+                    div.innerText = shortName;
+                    div.onclick = () => selectPlace(place);
+                    suggestBox.appendChild(div);
+                });
+            }
+        } catch (err) {
+            console.error("Geocoding failed", err);
+        }
+    }
 
-        // Auto-Category Logic
+    function selectPlace(place) {
+        input.value = place.display_name;
+        input.dataset.lat = place.lat;
+        input.dataset.lon = place.lon;
+        suggestBox.style.display = 'none';
+        addLocation();
+    }
+
+    function addLocation() {
+        const fullTitle = input.value;
+        if (!fullTitle) return;
+
+        const lat = input.dataset.lat;
+        const lon = input.dataset.lon;
+
         let category = 'visit';
-        const lower = name.toLowerCase();
-        for (const [cat, data] of Object.entries(config)) {
-            if (data.keywords.some(kw => lower.includes(kw))) { category = cat; break; }
+        const lower = fullTitle.toLowerCase();
+        for (const [key, val] of Object.entries(categories)) {
+            if (val.keywords.some(kw => lower.includes(kw))) {
+                category = key;
+                break;
+            }
         }
 
         locations.push({
             id: Date.now(),
-            name: name.split(',')[0],
-            fullAddress: name,
+            name: fullTitle.split(',')[0],
             category: category,
-            visited: false,
-            lat: input.dataset.lat || null,
-            lon: input.dataset.lon || null
+            lat: lat || null,
+            lon: lon || null,
+            visited: false
         });
 
         input.value = '';
+        delete input.dataset.lat;
+        delete input.dataset.lon;
         save();
+    }
+
+    function addManually() { addLocation(); }
+
+    function save() {
+        localStorage.setItem('japan_trip_v4', JSON.stringify(locations));
+        render();
     }
 
     function toggleVisited(id) {
@@ -142,62 +181,53 @@
         save();
     }
 
-    function save() {
-        localStorage.setItem('japan_trip_v3', JSON.stringify(locations));
-        render();
-    }
-
     function render() {
-        const container = document.getElementById('category-lists');
-        container.innerHTML = '';
+        const sidebar = document.getElementById('sidebar');
+        sidebar.innerHTML = '';
         markerGroup.clearLayers();
 
-        const categories = Object.keys(config);
-        
-        categories.forEach(cat => {
-            const filtered = locations.filter(l => l.category === cat);
-            const section = document.createElement('div');
-            section.className = 'cat-group';
-            section.innerHTML = `
-                <div class="cat-header" style="color:${config[cat].color}">
-                    <span>${cat.toUpperCase()}</span>
-                    <span class="count">${filtered.length}</span>
-                </div>
-            `;
+        const activeCoords = [];
+
+        Object.keys(categories).forEach(catKey => {
+            const cat = categories[catKey];
+            const items = locations.filter(l => l.category === catKey);
             
-            filtered.forEach(loc => {
-                const item = document.createElement('div');
-                item.className = `item ${loc.visited ? 'visited' : ''}`;
-                item.innerHTML = `
+            const section = document.createElement('div');
+            section.className = 'cat-section';
+            section.innerHTML = `<div class="cat-title" style="color:${cat.color}">${cat.icon} ${catKey} <span>${items.length}</span></div>`;
+            
+            items.forEach(loc => {
+                const el = document.createElement('div');
+                el.className = `place-item ${loc.visited ? 'visited' : ''}`;
+                el.style.borderLeftColor = cat.color;
+                el.innerHTML = `
                     <input type="checkbox" ${loc.visited ? 'checked' : ''} onchange="toggleVisited(${loc.id})">
                     <span>${loc.name}</span>
-                    <button class="delete-btn" onclick="deleteLoc(${loc.id})">✕</button>
+                    <button class="del-btn" onclick="deleteLoc(${loc.id})">✕</button>
                 `;
-                section.appendChild(item);
+                section.appendChild(el);
 
-                // Add to Map if coords exist
                 if (loc.lat && loc.lon && !loc.visited) {
-                    const marker = L.circleMarker([loc.lat, loc.lon], {
-                        radius: 8,
-                        fillColor: config[loc.category].color,
-                        color: "#fff",
-                        weight: 2,
-                        opacity: 1,
-                        fillOpacity: 0.8
-                    }).addTo(markerGroup).bindPopup(`<b>${loc.name}</b><br>${loc.category}`);
+                    activeCoords.push([loc.lat, loc.lon]);
+                    L.circleMarker([loc.lat, loc.lon], {
+                        radius: 7, fillColor: cat.color, color: "#fff", weight: 2, fillOpacity: 0.9
+                    }).addTo(markerGroup).bindPopup(`<b>${loc.name}</b>`);
                 }
             });
-            container.appendChild(section);
+            sidebar.appendChild(section);
         });
 
-        // Auto-zoom map to show markers
-        if (locations.length > 0) {
-            const validCoords = locations.filter(l => l.lat && !l.visited).map(l => [l.lat, l.lon]);
-            if (validCoords.length > 0) map.fitBounds(validCoords, {padding: [50, 50]});
+        if (activeCoords.length > 0) {
+            map.fitBounds(activeCoords, { padding: [50, 50], maxZoom: 15 });
         }
     }
 
     window.onload = initMap;
+    // Hide suggestions when clicking away
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.search-container')) suggestBox.style.display = 'none';
+    });
 </script>
+
 </body>
 </html>
